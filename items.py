@@ -1,15 +1,33 @@
-class Property:
-    def __init__(self, name, validator=None):
-        self.name = name
-        if validator is None:
-            self.validate = lambda value: True
-        elif isinstance(validator, list):
-            def contains_element(x):
-                return x in validator
+from functools import reduce
 
-            self.validate = contains_element
+
+class Property:
+    def __init__(self, name, validator=None, types=None):
+        self.name = name  # TODO remove name and extract it from the attribute
+        # validating function
+        if validator is None:
+            def validate(x):
+                return True
+        elif isinstance(validator, list):
+            def validate(x):
+                return x in validator
         elif callable(validator):
-            self.validate = validator
+            def validate(x):
+                return validator()
+        else:
+            raise TypeError()
+
+        # type validation function
+        if types is None:
+            def type_validate(_type):
+                return True
+        elif isinstance(types, list):
+            def type_validate(_type):
+                return _type in types
+        else:
+            raise TypeError()
+
+        self.validator = lambda arg: validate(arg) and type_validate(type(arg))
 
     def __repr__(self) -> str:
         return f"Property {self.name}"
