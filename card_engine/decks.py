@@ -5,8 +5,9 @@ _french_raw = product(range(1, 14), ["heart", "diamond", "spade", "club"])
 
 
 class Card(Item):
-    rank = Property("rank", lambda x: 0 < x <= 13, int)
-    suit = Property("suit", ["spade", "heart", "club", "diamond", 7], str)
+    # rank = Property("rank", lambda x: 0 < x <= 13, int)
+    rank = Property(lambda x: True, int)
+    suit = Property(["spade", "heart", "club", "diamond"], str)
 
 
 french = []
