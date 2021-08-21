@@ -12,21 +12,21 @@ class Property:
                 return x in validator
         elif callable(validator):
             def validate(x):
-                return validator
+                return validator(x)
         else:
             raise TypeError()
 
         # type validation function
-        # if types is None:
-        #     def type_validate(_type):
-        #         return True
-        # elif isinstance(types, list):
-        #     def type_validate(_type):
-        #         return _type in types
-        # else:
-        #     raise TypeError()
+        if types is None:
+            def validate_type(_type):
+                return True
+        elif isinstance(types, list):
+            def validate_type(_type):
+                return _type in types
+        else:
+            raise ValueError("types expects a list of types or None")
 
-        self.validator = lambda arg: validate(arg)  # and type_validate(type(arg))
+        self.validator = lambda arg: validate_type(type(arg)) and validate(arg)
 
 
 def constructor_factory(cls):
@@ -34,16 +34,26 @@ def constructor_factory(cls):
     for key, prop in cls.props:
         prop_names_list.append(key)
 
-    def __init__(self, **kwargs):
-        undefined_props = list(prop_names_list)
-        for key, value in kwargs.items():
-            if key in prop_names_list and cls.props[key].validator(value):
-                setattr(self, key, value)
-                undefined_props.remove(prop)
-            elif key not in prop_names_list:
-                raise Exception(f"key: {key} not in item")
-            elif not prop.validator(value):
-                raise Exception(f"value {value} does not respect {key} conditions")
+    def __init__(self, *args, **kwargs):
+        for key, _ in kwargs.items():
+            if key not in prop_names_list:
+                raise AttributeError(f"argument key {key} is not contained in the properties of the class (check the "
+                                     f"names of kwargs)")
+        if len(args) > 0:
+            raise AttributeError("You should pass the parameters specifying their name (ex. param=5) and not as a "
+                                 "positional argument")
+        if len(kwargs) != len(prop_names_list):
+            raise AttributeError("Wrong number of parameters passed to item constructor")
+
+        for prop_key, prop_value in cls.props:
+            for arg_key, arg_value in kwargs.items():
+                if prop_key == arg_key:
+                    if prop_value.validator(arg_value):
+                        setattr(self, arg_key, arg_value)
+                    elif arg_key not in prop_names_list:
+                        raise AttributeError(f"key: {key} not in item")
+                    elif not prop_value.validator(arg_value):
+                        raise AttributeError(f"value \"{arg_value}\" does not respect {key} conditions or types")
 
     return __init__
 
@@ -64,8 +74,9 @@ class ItemMetaclass(type):
         # props from inherited classes TODO
 
         for key, prop in cls.props:
-            setattr(cls, key, None)
+            setattr(cls, f"_{key}", None)
         setattr(cls, "__init__", constructor_factory(cls))
+        setattr(cls, "__repr__", lambda self: "item")  # TODO better repr
 
 
 Item = ItemMetaclass("Item", (), {})
