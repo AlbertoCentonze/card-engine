@@ -34,7 +34,7 @@ from card_engine.items import Item, Property
 # creating a card representing any french playing card
 class FrenchCard(Item):
     # validating with a function the possible attributes
-    rank = Property(lambda x: 0 < x <= 13, int)
+    rank = Property(lambda x: 0 < x <= 13, [int])
     # validating with list membership
     suit = Property(("spade", "heart", "club", "diamond"))
 ```

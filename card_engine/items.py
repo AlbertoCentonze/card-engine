@@ -49,7 +49,7 @@ def constructor_factory(cls):
             for arg_key, arg_value in kwargs.items():
                 if prop_key == arg_key:
                     if prop_value.validator(arg_value):
-                        setattr(self, arg_key, arg_value)
+                        setattr(self, f"_{arg_key}", arg_value)
                     elif arg_key not in prop_names_list:
                         raise AttributeError(f"key: {key} not in item")
                     elif not prop_value.validator(arg_value):
@@ -73,10 +73,19 @@ class ItemMetaclass(type):
 
         # props from inherited classes TODO
 
+        def negate_setter(self, value):
+            raise Exception("Items are immutable")
+
+        def getter(self):
+            getattr(self, f"_{key}")
+
         for key, prop in cls.props:
             setattr(cls, f"_{key}", None)
+            setattr(cls, key, property(getter, negate_setter))
         setattr(cls, "__init__", constructor_factory(cls))
         setattr(cls, "__repr__", lambda self: "item")  # TODO better repr
+
+
 
 
 Item = ItemMetaclass("Item", (), {})
