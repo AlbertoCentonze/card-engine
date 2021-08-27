@@ -4,91 +4,57 @@ from typing import TypeVar, Generic
 
 class Observer(ABC):
     @abstractmethod
-    def update(self, value):
+    def update(self, subject):
         pass
-
-
-class BooleanExpression(Observer):
-    def __init__(self, condition):
-        self.__condition = condition
-        self.__value = False
-
-    @property
-    def value(self):
-        return self.__value
-
-    @value.getter
-    def value(self):
-        return self.__value
-
-    @value.setter
-    def value(self, value):
-        raise Exception("unsupported")
-
-    def __repr__(self):
-        return self.__value.__repr__()
-
-    def update(self, value):
-        new_value = self.__condition(value)
-        if isinstance(new_value, bool):
-            self.__value = new_value
-        else:
-            raise TypeError()
-
-    def __bool__(self):
-        return self.__value
-
-
-BooleanExpression.register(bool)
-
-
-class StringExpression(Observer, ABC):
-    pass
 
 
 T = TypeVar("T")
 
 
-class Subject(Generic[T]):
-    def __init__(self, value, observers=None):
+class Subject(Generic[T], ABC):
+    def __init__(self, value, observers: list[Observer] = None):
         if observers is None:
             observers = []
-        self.__observers: set = set()
-        self.__value: T = value
+        self._observers: set = set()
+        self._state: T = value
         for o in observers:
-            self.add_observer(o)
+            self.attach(o)
 
-    def add_observer(self, observer):
-        assert issubclass(type(observer), Observer) and observer not in self.__observers
-        observer.update(self.value)
-        self.__observers.add(observer)
+    def attach(self, observer):
+        assert issubclass(type(observer), Observer) and observer not in self._observers
+        observer.update(self.state)
+        self._observers.add(observer)
 
-    def remove_observer(self, observer):
-        assert issubclass(type(observer), Observer) and observer in self.__observers
-        observer.update(self.value())
-        self.__observers.remove(observer)
+    def detach(self, observer):
+        assert issubclass(type(observer), Observer) and observer in self._observers
+        observer.update(self.state())
+        self._observers.remove(observer)
+
+    def notify(self):
+        for o in self._observers:
+            o.update(self._state)
+
+    @property
+    def state(self) -> T:
+        return self._state
+
+    @state.setter
+    def state(self, new_state: T) -> None:
+        update_necessary = self.set_state(new_state)
+        if update_necessary:
+            self.notify()
+
+    @abstractmethod
+    def set_state(self, value) -> bool:
+        pass
 
     def __add__(self, other: Observer):
-        self.add_observer(other)
+        self.attach(other)
         return self
 
     def __sub__(self, other: Observer):
-        self.remove_observer(other)
+        self.detach(other)
         return self
 
     def __repr__(self):
-        return f"obs: {self.__observers}"
-
-    @property
-    def value(self) -> T:
-        return self.__value
-
-    @value.setter
-    def value(self, value: T) -> None:
-        for o in self.__observers:
-            o.update(value)
-        self.__value = value
-
-    @value.getter
-    def value(self) -> T:
-        return self.__value
+        return f"obs: {self._observers}"

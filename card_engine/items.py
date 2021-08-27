@@ -1,6 +1,3 @@
-import inspect
-
-
 class Property:
     def __init__(self, validator=None, types=None):
         # validating function
@@ -51,9 +48,9 @@ def constructor_factory(cls):
                     if prop_value.validator(arg_value):
                         setattr(self, f"_{arg_key}", arg_value)
                     elif arg_key not in prop_names_list:
-                        raise AttributeError(f"key: {key} not in item")
+                        raise AttributeError(f"key: {arg_key} not in item")
                     elif not prop_value.validator(arg_value):
-                        raise AttributeError(f"value \"{arg_value}\" does not respect {key} conditions or types")
+                        raise AttributeError(f"value \"{arg_value}\" does not respect {arg_key} conditions or types")
 
     return __init__
 
@@ -84,8 +81,6 @@ class ItemMetaclass(type):
             setattr(cls, key, property(getter, negate_setter))
         setattr(cls, "__init__", constructor_factory(cls))
         setattr(cls, "__repr__", lambda self: "item")  # TODO better repr
-
-
 
 
 Item = ItemMetaclass("Item", (), {})
